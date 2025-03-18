@@ -13,13 +13,21 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
-        
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
+    <!-- Preloader -->
+    <div class="preloader">
+        <div class="loader">
+            <div class="loader-logo">MN</div>
+            <div class="loader-text">Loading</div>
+            <div class="loader-bar"></div>
+        </div>
+    </div>
+
     <!-- Progress Bar -->
     <div class="progress-container">
         <div class="progress-bar" id="progressBar"></div>
@@ -867,14 +875,35 @@
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
     <script>
-        // Force all animated elements to be visible immediately
-        document.addEventListener('DOMContentLoaded', function () {
-            document.querySelectorAll('.fade-in, .slide-in-left, .slide-in-right, .zoom-in').forEach(function (element) {
-                element.classList.add('active');
-            });
+        // Preloader functionality
+        window.addEventListener('load', function () {
+            const preloader = document.querySelector('.preloader');
+            if (preloader) {
+                setTimeout(function () {
+                    preloader.classList.add('preloader-finish');
+                    setTimeout(function () {
+                        preloader.style.display = 'none';
+
+                        // Initialize all animations and make elements visible immediately after preloader
+                        document.querySelectorAll('.fade-in, .slide-in-left, .slide-in-right, .zoom-in').forEach(function (element) {
+                            element.classList.add('active');
+                        });
+
+                        // Start counters immediately after preloader
+                        animateCounter('experienceCounter', 7, 1500);
+                        animateCounter('projectsCounter', 35, 2000);
+                        animateCounter('clientsCounter', 12000, 2500);
+                    }, 500);
+                }, 1500);
+            }
         });
 
         document.addEventListener('DOMContentLoaded', function () {
+            // Immediately make all content visible regardless of scroll position
+            document.querySelectorAll('.fade-in, .slide-in-left, .slide-in-right, .zoom-in').forEach(function (element) {
+                element.classList.add('active');
+            });
+
             // Hamburger menu toggle
             const hamburger = document.getElementById('hamburger');
             const navMenu = document.getElementById('navMenu');
@@ -886,29 +915,49 @@
                 });
             }
 
-            // Theme toggle
+            // Theme toggle with localStorage support
             const themeToggle = document.getElementById('themeToggle');
+            const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+
+            // Check for saved theme preference or use system preference
+            const savedTheme = localStorage.getItem('theme');
+
+            if (savedTheme === 'dark' || (!savedTheme && prefersDarkScheme.matches)) {
+                document.documentElement.classList.add('dark-mode');
+                if (themeToggle) {
+                    themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+                }
+            }
 
             if (themeToggle) {
                 themeToggle.addEventListener('click', function () {
                     document.documentElement.classList.toggle('dark-mode');
-
                     if (document.documentElement.classList.contains('dark-mode')) {
                         themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+                        localStorage.setItem('theme', 'dark');
                     } else {
                         themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+                        localStorage.setItem('theme', 'light');
                     }
                 });
             }
 
             // Scroll progress bar
             const progressBar = document.getElementById('progressBar');
+            const header = document.querySelector('.header');
 
             if (progressBar) {
                 window.addEventListener('scroll', function () {
                     const totalHeight = document.body.scrollHeight - window.innerHeight;
                     const progress = (window.pageYOffset / totalHeight) * 100;
                     progressBar.style.width = progress + '%';
+
+                    // Add scrolled class to header
+                    if (header && window.pageYOffset > 100) {
+                        header.classList.add('scrolled');
+                    } else if (header) {
+                        header.classList.remove('scrolled');
+                    }
 
                     // Show/hide go to top button
                     const goTop = document.getElementById('goTop');
@@ -919,7 +968,13 @@
                             goTop.classList.remove('active');
                         }
                     }
+
+                    // Highlight active section in navigation
+                    highlightCurrentSection();
                 });
+
+                // Trigger scroll event to initialize progress bar and active section
+                window.dispatchEvent(new Event('scroll'));
             }
 
             // Go to top button
@@ -935,47 +990,52 @@
                 });
             }
 
-            // Animation on scroll 
-            function activateAnimations() {
-                // Get all elements that need to be animated
-                const fadeElems = document.querySelectorAll('.fade-in');
-                const slideLeftElems = document.querySelectorAll('.slide-in-left');
-                const slideRightElems = document.querySelectorAll('.slide-in-right');
-                const zoomElems = document.querySelectorAll('.zoom-in');
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
 
-                // Add 'active' class to visible elements
-                function checkPosition() {
-                    const windowHeight = window.innerHeight;
-                    const windowTopPosition = window.scrollY;
-                    const windowBottomPosition = windowTopPosition + windowHeight;
+                    const targetId = this.getAttribute('href');
+                    if (targetId === '#') return;
 
-                    function activateElement(element) {
-                        const elementHeight = element.offsetHeight;
-                        const elementTopPosition = element.offsetTop;
-                        const elementBottomPosition = elementTopPosition + elementHeight;
-
-                        // Check if element is in viewport
-                        if (elementBottomPosition >= windowTopPosition && elementTopPosition <= windowBottomPosition) {
-                            element.classList.add('active');
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        // Close mobile menu if open
+                        if (navMenu && navMenu.classList.contains('active')) {
+                            hamburger.classList.remove('active');
+                            navMenu.classList.remove('active');
                         }
+
+                        // Smooth scroll to target
+                        window.scrollTo({
+                            top: targetElement.offsetTop - (header ? header.offsetHeight : 0),
+                            behavior: 'smooth'
+                        });
                     }
+                });
+            });
 
-                    // Apply to all animation types
-                    fadeElems.forEach(activateElement);
-                    slideLeftElems.forEach(activateElement);
-                    slideRightElems.forEach(activateElement);
-                    zoomElems.forEach(activateElement);
-                }
+            // Active navigation highlighting
+            function highlightCurrentSection() {
+                const sections = document.querySelectorAll('section');
+                const navLinks = document.querySelectorAll('.nav-link');
 
-                // Initial check on page load
-                checkPosition();
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop - (header ? header.offsetHeight : 0) - 100;
+                    const sectionHeight = section.offsetHeight;
+                    if (window.scrollY >= sectionTop && window.scrollY < sectionTop + sectionHeight) {
+                        current = section.getAttribute('id');
+                    }
+                });
 
-                // Check on scroll
-                window.addEventListener('scroll', checkPosition);
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (current && link.getAttribute('href') === `#${current}`) {
+                        link.classList.add('active');
+                    }
+                });
             }
-
-            // Run animations
-            activateAnimations();
 
             // Campaign filtering
             const filterButtons = document.querySelectorAll('.campaign-filter');
@@ -1044,55 +1104,57 @@
                     });
                 }
             }
-
-            // TEMPORARY FIX: Add 'active' class to all animation elements immediately
-            // This will make all content visible even without scroll events
-            document.querySelectorAll('.fade-in, .slide-in-left, .slide-in-right, .zoom-in').forEach(element => {
-                element.classList.add('active');
-            });
         });
 
-        // Initialize any particles.js elements if present
-        if (typeof particlesJS !== 'undefined') {
-            // Hero background particles
-            if (document.getElementById('particles-js')) {
-                particlesJS('particles-js', {
-                    particles: {
-                        number: { value: 80, density: { enable: true, value_area: 800 } },
-                        color: { value: '#28A745' },
-                        shape: { type: 'circle' },
-                        opacity: { value: 0.5, random: true },
-                        size: { value: 3, random: true },
-                        line_linked: { enable: true, distance: 150, color: '#28A745', opacity: 0.4, width: 1 },
-                        move: { enable: true, speed: 2, direction: 'none', random: true, straight: false, out_mode: 'out' }
-                    },
-                    interactivity: {
-                        detect_on: 'canvas',
-                        events: {
-                            onhover: { enable: true, mode: 'grab' },
-                            onclick: { enable: true, mode: 'push' }
-                        }
-                    }
-                });
-            }
+        // Initialize particles.js if available
+        window.addEventListener('load', function () {
+            if (typeof particlesJS !== 'undefined') {
+                // Hero background particles
+                if (document.getElementById('particles-js')) {
+                    particlesJS('particles-js', {
+                        particles: {
+                            number: { value: 80, density: { enable: true, value_area: 800 } },
+                            color: { value: '#28A745' },
+                            shape: { type: 'circle' },
+                            opacity: { value: 0.5, random: true },
+                            size: { value: 3, random: true },
+                            line_linked: { enable: true, distance: 150, color: '#28A745', opacity: 0.4, width: 1 },
+                            move: { enable: true, speed: 2, direction: 'none', random: true, straight: false, out_mode: 'out' }
+                        },
+                        interactivity: {
+                            detect_on: 'canvas',
+                            events: {
+                                onhover: { enable: true, mode: 'grab' },
+                                onclick: { enable: true, mode: 'push' }
+                            },
+                            modes: {
+                                grab: { distance: 140, line_linked: { opacity: 1 } },
+                                push: { particles_nb: 4 }
+                            }
+                        },
+                        retina_detect: true
+                    });
+                }
 
-            // Tech particles for hero image
-            if (document.getElementById('particles-tech')) {
-                particlesJS('particles-tech', {
-                    particles: {
-                        number: { value: 15, density: { enable: true, value_area: 800 } },
-                        color: { value: '#ffffff' },
-                        shape: { type: 'circle' },
-                        opacity: { value: 0.8, random: true },
-                        size: { value: 4, random: true },
-                        line_linked: { enable: true, distance: 150, color: '#ffffff', opacity: 0.4, width: 1 },
-                        move: { enable: true, speed: 1, direction: 'none', random: true, straight: false, out_mode: 'out' }
-                    }
-                });
+                // Tech particles for hero image
+                if (document.getElementById('particles-tech')) {
+                    particlesJS('particles-tech', {
+                        particles: {
+                            number: { value: 15, density: { enable: true, value_area: 800 } },
+                            color: { value: '#ffffff' },
+                            shape: { type: 'circle' },
+                            opacity: { value: 0.8, random: true },
+                            size: { value: 4, random: true },
+                            line_linked: { enable: true, distance: 150, color: '#ffffff', opacity: 0.4, width: 1 },
+                            move: { enable: true, speed: 1, direction: 'none', random: true, straight: false, out_mode: 'out' }
+                        },
+                        retina_detect: true
+                    });
+                }
             }
-        }
+        });
 
-        // Counter animation for statistics
+        // Counter animation for statistics - ensure the counters run regardless of current page section
         function animateCounter(elementId, targetValue, duration) {
             const element = document.getElementById(elementId);
             if (!element) return;
@@ -1100,25 +1162,36 @@
             let startValue = 0;
             const increment = targetValue / (duration / 16);
 
+            // If we're not looking at a counter in the viewport (e.g. refreshed on a different section),
+            // just set the value immediately
+            if (!isElementInViewport(element)) {
+                element.textContent = targetValue + (targetValue >= 1000 ? '+' : '+');
+                return;
+            }
+
             function updateCounter() {
                 startValue += increment;
                 if (startValue < targetValue) {
-                    element.textContent = Math.ceil(startValue) + '+';
+                    element.textContent = Math.ceil(startValue) + (targetValue >= 1000 ? '+' : '+');
                     requestAnimationFrame(updateCounter);
                 } else {
-                    element.textContent = targetValue + '+';
+                    element.textContent = targetValue + (targetValue >= 1000 ? '+' : '+');
                 }
             }
 
             updateCounter();
         }
 
-        // Start counters with delay
-        setTimeout(function () {
-            animateCounter('experienceCounter', 7, 1500);
-            animateCounter('projectsCounter', 35, 2000);
-            animateCounter('clientsCounter', 12000, 2500);
-        }, 1000);
+        // Helper function to check if an element is in the viewport
+        function isElementInViewport(el) {
+            const rect = el.getBoundingClientRect();
+            return (
+                rect.top >= 0 &&
+                rect.left >= 0 &&
+                rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+                rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+            );
+        }
     </script>
 </body>
 
